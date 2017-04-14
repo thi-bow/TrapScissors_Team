@@ -92,7 +92,7 @@ public class Enemy : MonoBehaviour
     }
 
     // Use this for initialization
-    void Start()
+    protected void Start()
     {
         // アニメーションリストにリソースを追加
         m_Rigidbody = GetComponent<Rigidbody2D>();
@@ -110,7 +110,7 @@ public class Enemy : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    protected void Update()
     {
         // 状態の更新
         UpdateState(Time.deltaTime);
