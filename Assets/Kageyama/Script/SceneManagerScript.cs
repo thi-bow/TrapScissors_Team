@@ -53,6 +53,11 @@ public class SceneManagerScript : MonoBehaviour
     private bool _sound_FadeOUT;
     #endregion
 
+    #region ゲーム終了の処理
+    [SerializeField]
+    private GameObject _endDialog;
+    #endregion
+
 
     //どこでも参照可
     public static SceneManagerScript sceneManager
@@ -214,6 +219,37 @@ public class SceneManagerScript : MonoBehaviour
     }
 
     /// <summary>
+    /// ゲームを止め、終了を確認するダイアログを表示させる
+    /// </summary>
+    public void QuitCheck()
+    {
+        //終了確認をするダイアログがなければ、確認しないでゲームを終了させる
+        if(_endDialog == null)
+        {
+            Quit();
+            return;
+        }
+        //すでにダイアログが出ていたら、ダイアログを消してゲームを再開する
+        if(_endDialog.activeSelf == true)
+        {
+            QuitCancel();
+        }
+        FadeBlack();
+        _endDialog.SetActive(true);
+    }
+
+    /// <summary>
+    /// ダイアログを消して、ゲームを再開させる
+    /// </summary>
+    public void QuitCancel()
+    {
+        //終了確認をするダイアログがない、もしくは表示されていないなら、確認しないでゲームを終了させる
+        if (_endDialog == null || _endDialog.activeSelf == false) return;
+        _endDialog.SetActive(false);
+        FadeWhite();
+    }
+
+    /// <summary>
     /// シーン移動せずに画面全体を薄暗くして時間を止める
     /// </summary>
     public void FadeBlack()
@@ -301,55 +337,59 @@ public class SceneManagerScript : MonoBehaviour
     [CustomEditor(typeof(SceneManagerScript))]
     public class SceneManagerEditor : Editor
     {
-        SerializedProperty fade_Object;
-        SerializedProperty lord;
+        SerializedProperty Fade_Object;
+        SerializedProperty Lord;
         SerializedProperty Scene_Fade;
-        SerializedProperty intime;
-        SerializedProperty outtime;
-        SerializedProperty leave_Alone;
-        SerializedProperty waiting_Time;
-        SerializedProperty waiting_Scene;
+        SerializedProperty Intime;
+        SerializedProperty Outtime;
+        SerializedProperty Leave_Alone;
+        SerializedProperty Waiting_Time;
+        SerializedProperty Waiting_Scene;
         SerializedProperty BgmMade;
         SerializedProperty BGM_Number;
         SerializedProperty Fade_IN_Sound;
         SerializedProperty Fade_OUT_Sound;
+        SerializedProperty EndDialog;
 
         public void OnEnable()
         {
-            fade_Object = serializedObject.FindProperty("_fade_Object");
-            lord = serializedObject.FindProperty("_lord");
-            intime = serializedObject.FindProperty("_intime");
-            outtime = serializedObject.FindProperty("_outtime");
-            leave_Alone = serializedObject.FindProperty("_leave_Alone");
-            waiting_Time = serializedObject.FindProperty("_waiting_Time");
-            waiting_Scene = serializedObject.FindProperty("_waiting_Scene");
+            Fade_Object = serializedObject.FindProperty("_fade_Object");
+            Lord = serializedObject.FindProperty("_lord");
+            Intime = serializedObject.FindProperty("_intime");
+            Outtime = serializedObject.FindProperty("_outtime");
+            Leave_Alone = serializedObject.FindProperty("_leave_Alone");
+            Waiting_Time = serializedObject.FindProperty("_waiting_Time");
+            Waiting_Scene = serializedObject.FindProperty("_waiting_Scene");
             BgmMade = serializedObject.FindProperty("_bgmMade");
             BGM_Number = serializedObject.FindProperty("_BGM_Number");
             Fade_IN_Sound = serializedObject.FindProperty("_sound_FadeIN");
             Fade_OUT_Sound = serializedObject.FindProperty("_sound_FadeOUT");
             Scene_Fade = serializedObject.FindProperty("_scene_Fade");
+            EndDialog = serializedObject.FindProperty("_endDialog");
         }
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
             SceneManagerScript scene = target as SceneManagerScript;
 
-            fade_Object.objectReferenceValue = EditorGUILayout.ObjectField("フェードさせる画像", scene._fade_Object, typeof(GameObject), true) as GameObject;
-            lord.objectReferenceValue = EditorGUILayout.ObjectField("ロード中に出す画像", scene._lord, typeof(GameObject), true) as GameObject;
+            Fade_Object.objectReferenceValue = EditorGUILayout.ObjectField("フェードさせる画像", scene._fade_Object, typeof(GameObject), true) as GameObject;
+            Lord.objectReferenceValue = EditorGUILayout.ObjectField("ロード中に出す画像", scene._lord, typeof(GameObject), true) as GameObject;
 
             EditorGUILayout.Space();
             Scene_Fade.boolValue = EditorGUILayout.Toggle("フェードインをさせる", scene._scene_Fade);
             EditorGUILayout.LabelField("フェード時間( IN / OUT )");
             EditorGUILayout.BeginHorizontal();
-            intime.floatValue = EditorGUILayout.FloatField(scene._intime, GUILayout.Width(32));
-            outtime.floatValue = EditorGUILayout.FloatField(scene._outtime, GUILayout.Width(32));
+            Intime.floatValue = EditorGUILayout.FloatField(scene._intime, GUILayout.Width(32));
+            Outtime.floatValue = EditorGUILayout.FloatField(scene._outtime, GUILayout.Width(32));
             EditorGUILayout.EndHorizontal();
 
-            leave_Alone.boolValue = EditorGUILayout.Toggle("放置したらシーン移動", scene._leave_Alone);
+            EndDialog.objectReferenceValue = EditorGUILayout.ObjectField("ゲームを終了するか確認するダイアログ", scene._endDialog, typeof(GameObject), true) as GameObject;
+
+            Leave_Alone.boolValue = EditorGUILayout.Toggle("放置したらシーン移動", scene._leave_Alone);
             if(scene._leave_Alone == true)
             {
-                waiting_Time.floatValue = EditorGUILayout.FloatField("放置時間", scene._waiting_Time);
-                waiting_Scene.stringValue = EditorGUILayout.TextField("移動するシーン", scene._waiting_Scene);
+                Waiting_Time.floatValue = EditorGUILayout.FloatField("放置時間", scene._waiting_Time);
+                Waiting_Scene.stringValue = EditorGUILayout.TextField("移動するシーン", scene._waiting_Scene);
             }
 
             EditorGUILayout.Space();

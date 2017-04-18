@@ -26,16 +26,6 @@ public class CameraMove : MonoBehaviour
         else transform.position = Vector3.Lerp(transform.position, newPosition, 5.0f * Time.deltaTime);
     }
 
-    // Update is called once per frame
-    void Update () {
-        //Move();
-	}
-
-    void Move()
-    {
-        //this.transform.Rotate(0, (Input.GetAxis("Camera") * 1), 0);
-    }
-
     /// <summary>
     /// スムーズに追いかけるときはtrue、ピッタリくっつくときはfalseにする
     /// </summary>
