@@ -4,7 +4,7 @@ using System.Collections;
 public class WallChackPoint : MonoBehaviour
 {
     private bool m_IsWallHit = false;   // 壁に衝突したか
-    private Vector2 m_Direction = Vector2.right;
+    //private Vector2 m_Direction = Vector2.right;
 
     // Use this for initialization
     //void Start() {

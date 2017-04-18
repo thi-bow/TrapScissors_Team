@@ -9,60 +9,39 @@ using UnityEditor;
 public class Enemy : MonoBehaviour
 {
     [SerializeField]
-    private float m_Speed = 1.0f;                    // 移動速度
+    private float m_Speed = 1.0f;                   // 移動速度
     [SerializeField]
-    private float m_RageTime = 10.0f;                // 暴れる時間
+    private float m_TrapHitSpeed = 3.0f;            // 移動速度
     [SerializeField]
-    private float m_ViewLength = 10.0f;               // プレイヤーが見える距離
+    private float m_RageTime = 10.0f;               // 暴れる時間
     [SerializeField]
-    private float m_ViewAngle = 30.0f;               // プレイヤーが見える角度
+    private float m_ViewLength = 10.0f;             // プレイヤーが見える距離
     [SerializeField]
-    private Transform m_GroundPoint = null;                 // 接地ポイント
+    private float m_ViewAngle = 30.0f;              // プレイヤーが見える角度
     [SerializeField]
-    private Transform m_RayPoint = null;                    // レイポイント
+    private Transform m_GroundPoint = null;         // 接地ポイント
     [SerializeField]
-    private WallChackPoint m_WChackPoint = null;            // 壁捜索ポイント
+    private Transform m_RayPoint = null;            // レイポイント
+    [SerializeField]
+    private WallChackPoint m_WChackPoint = null;    // 壁捜索ポイント
 
-    //protected Vector2 m_Position;                   // 位置ベクトル
     protected int m_Size = 1;                       // 動物の大きさ(内部数値)
-    //protected Vector2 m_Direction = Vector2.right;  // 方向
     protected Vector2 m_Velocity = Vector2.right;   // 移動量
     protected Rigidbody2D m_Rigidbody;
 
     // モーション番号
     protected int m_MotionNumber = (int)AnimationNumber.ANIME_IDEL_NUMBER;
 
-    private const float GRAVITY = 9.8f;
     private bool m_IsPravGround;                    // 前回の接地判定
+    private string m_PlayerTag = "Player";          // プレイヤータグ
     private State m_State = State.Idel;             // 状態
     private float m_StateTimer = 0.0f;              // 状態の時間
-    private DSNumber m_DSNumber;                    // 追跡状態の番号
+    private DSNumber m_DSNumber = 
+        DSNumber.DISCOVERED_CHASE_NUMBER;           // 追跡状態の番号                                                    
+    private Player m_Player = null;                 // 当たったプレイヤー
     private List<State>
         m_DiscoveredStates = new List<State>();     // 発見後の行動
 
-    //public float m_Speed = 1.0f;                    // 移動速度
-    //public float m_ViewLength = 1.0f;               // プレイヤーが見える距離
-    //public float m_ViewAngle = 30.0f;               // プレイヤーが見える角度
-    //public Transform m_GroundPoint;                 // 接地ポイント
-    //public Transform m_RayPoint;                    // レイポイント
-    //public WallChackPoint m_WChackPoint;            // 壁捜索ポイント
-
-    ////protected Vector2 m_Position;                   // 位置ベクトル
-    //protected int m_Size = 1;                       // 動物の大きさ(内部数値)
-    ////protected Vector2 m_Direction = Vector2.right;  // 方向
-    //protected Vector2 m_Velocity = Vector2.right;   // 移動量
-    //protected Rigidbody2D m_Rigidbody;
-
-    //// モーション番号
-    //protected int m_MotionNumber = (int)AnimationNumber.ANIME_IDEL_NUMBER;
-
-    //private const float GRAVITY = 9.8f;
-    //private bool m_IsPravGround;                    // 前回の接地判定
-    //private State m_State = State.Idel;             // 状態
-    //private float m_StateTimer = 0.0f;              // 状態の時間
-    //private DSNumber m_DSNumber;                    // 追跡状態の番号
-    //private List<State> 
-    //    m_DiscoveredStates = new List<State>();     // 発見後の行動
     //protected // アニメーション用のテクスチャリスト
 
     protected enum State
@@ -96,7 +75,6 @@ public class Enemy : MonoBehaviour
     {
         // アニメーションリストにリソースを追加
         m_Rigidbody = GetComponent<Rigidbody2D>();
-        //Collider2D collider = GetComponent<Collider2D>();
         CircleCollider2D collider = GetComponent<CircleCollider2D>();
 
         if (m_WChackPoint != null)
@@ -107,6 +85,11 @@ public class Enemy : MonoBehaviour
 
         m_DiscoveredStates.Add(State.Chase);
         m_DiscoveredStates.Add(State.Runaway);
+
+        // スプライトの取得
+        var sprite = gameObject.GetComponent<SpriteRenderer>();
+        if (sprite == null) return;
+        sprite.color = Color.red;
     }
 
     // Update is called once per frame
@@ -134,16 +117,12 @@ public class Enemy : MonoBehaviour
         // 状態の時間加算
         m_StateTimer += deltaTime;
 
-        //transform.position = transform.position + (Vector3)m_Velocity;
-
         // 位置ベクトルを代入
         Vector2 newVelocity = m_Rigidbody.velocity;
         Vector2 gravity = Vector2.up * m_Rigidbody.velocity.y;
         newVelocity = m_Velocity * m_Speed + gravity;
         m_Rigidbody.velocity = newVelocity;
 
-        //m_Rigidbody.velocity += m_Velocity;
-        //m_Rigidbody.velocity.
         m_Velocity = Vector2.zero;
         m_IsPravGround = IsGround();
     }
@@ -160,13 +139,13 @@ public class Enemy : MonoBehaviour
     // 待機状態
     protected void Idel(float deltaTime)
     {
-        if (InPlayer())
-        {
-            // 発見状態に遷移
-            ChangeState(State.Discover, AnimationNumber.ANIME_IDEL_NUMBER);
-            m_DSNumber = DSNumber.DISCOVERED_RUNAWAY_NUMBER;
-            return;
-        };
+        //if (InPlayer())
+        //{
+        //    // 発見状態に遷移
+        //    ChangeState(State.Discover, AnimationNumber.ANIME_IDEL_NUMBER);
+        //    m_DSNumber = DSNumber.DISCOVERED_RUNAWAY_NUMBER;
+        //    return;
+        //};
 
         // 移動
         Move(deltaTime);
@@ -204,7 +183,17 @@ public class Enemy : MonoBehaviour
         //Collision2D.Equals
 
         // 移動(通常の移動速度の数倍)
-        Move(deltaTime, 2.0f);
+        Move(deltaTime, m_TrapHitSpeed);
+
+        if (m_Player._state == Player.State.Wait)
+        {
+            ChangeState(State.Idel, AnimationNumber.ANIME_IDEL_NUMBER);
+            m_Player = null;
+            // スプライトの取得
+            var sprite = gameObject.GetComponent<SpriteRenderer>();
+            if (sprite == null) return;
+            sprite.color = Color.red;
+        }
     }
 
     // 逃げ状態
@@ -304,6 +293,33 @@ public class Enemy : MonoBehaviour
     //    return direction;
     //}
 
+    // プレイヤーとの衝突判定処理
+    protected void OnCollidePlayer(Collider2D collision)
+    {
+        var tag = collision.gameObject.tag;
+        if (tag == m_PlayerTag)
+        {
+            //// 当たったプレイヤーを子供に追加
+            //collision.gameObject.transform.parent = gameObject.transform;
+            var player = collision.GetComponent<Player>();
+
+            // プレイヤーがはさんだ状態なら、トラップヒット状態に遷移
+            if (player._state == Player.State.Endure)
+            {
+                // トラップヒット状態に遷移
+                ChangeState(
+                State.TrapHit,
+                AnimationNumber.ANIME_TRAP_NUMBER
+                );
+                m_Player = player;
+                // スプライトの取得
+                var sprite = gameObject.GetComponent<SpriteRenderer>();
+                if (sprite == null) return;
+                sprite.color = Color.yellow;
+            }
+        }
+    }
+
     // プレイヤーの方向を向きます(単位ベクトル)
     public void ChasePlayer()
     {
@@ -334,92 +350,49 @@ public class Enemy : MonoBehaviour
     // 衝突判定(トリガー用)
     public void OnTriggerEnter2D(Collider2D collision)
     {
-        var otherName = collision.gameObject.name;
-        if (otherName == "Player_Hasami_S") // 大きいはさみに挟まった場合
-        {
-            if (m_Size < 5)    // サイズが小さい場合
-            {
-                // 驚いている状態なら、返す
-                if (m_State == State.Discover) return;
-                // 上に上げる
-                m_Velocity = 20.0f * this.transform.up * Time.deltaTime;
-                // 逃げ状態に遷移
-                ChangeState(
-                State.Discover,
-                AnimationNumber.ANIME_DISCOVER_NUMBER
-                );
-                m_DSNumber = DSNumber.DISCOVERED_RUNAWAY_NUMBER;
-                return;
-            }
-            else
-            {
-                // トラップヒット状態に遷移
-                ChangeState(
-                State.TrapHit,
-                AnimationNumber.ANIME_TRAP_NUMBER
-                );
-                return;
-            }
-        }
-        else if (otherName == "Player_Hasami_W") // 小さいはさみに挟まった場合
-        {
-            // トラップヒット状態に遷移
-            ChangeState(
-                State.TrapHit,
-                AnimationNumber.ANIME_TRAP_NUMBER
-                );
-            // プレイヤーの状態を変更(耐える状態)
-            var player = GameObject.Find("Player");
-            //if (player != null) player;
-            return;
-        }
+        OnCollidePlayer(collision);
     }
+
+    // 衝突中(トリガー用)
+    public void OnTriggerStay2D(Collider2D collision)
+    {
+        OnCollidePlayer(collision);
+    }
+
+    //public void OnTriggerExit2D(Collider2D collision)
+    //{
+    //    var tag = collision.transform.tag;
+
+    //    if(tag == m_PlayerTag)
+    //    {
+    //        ChangeState(State.Idel, AnimationNumber.ANIME_IDEL_NUMBER);
+    //        return;
+    //    }
+    //}
 
     // 衝突判定
     public void OnCollisionEnter2D(Collision2D collision)
     {
         var tag = collision.gameObject.tag;
-        //if (tag == "Player")
-        //    Destroy(gameObject);
-        //else if (tag == "hasami_tekitou")
-        //{
-        //    var name = collision.gameObject.name;
-        //    if (name == "Big") // 大きいはさみに挟まった場合
-        //    {
-        //        if (m_Size < 5)    // サイズが小さい場合
-        //        {
-        //            ChangeState(
-        //            State.Runaway,
-        //            AnimationNumber.ANIME_RUNAWAY_NUMBER
-        //            );
-        //            return;
-        //        }
-        //        else
-        //        {
-        //            ChangeState(
-        //            State.TrapHit,
-        //            AnimationNumber.ANIME_TRAP_NUMBER
-        //            );
-        //            return;
-        //        }
-        //    }
-        //    else if(name == "small") // 小さいはさみに挟まった場合
-        //    {
-        //    }
-        //}
 
-        //if (tag == "Player")
-        //{
-        //    var name = collision.gameObject.name;
+        // プレイヤーに当たった場合
+        if (tag == m_PlayerTag)
+        {
+            // 当たったプレイヤーを子供に追加
+            collision.gameObject.transform.parent = gameObject.transform;
 
-        //}
+            //if (player == null) return;
+            //player
+            //player._state = Player.State.Endure;
+            //player._target = gameObject;
+        }
     }
 
     // ギズモの描画
     public void OnDrawGizmos()
     {
         var player = GameObject.Find("Player");
-        if (player == null) return; 
+        if (player == null) return;
         Gizmos.color = Color.red;
         // レイの描画
         Gizmos.DrawLine(m_RayPoint.position, player.transform.position);
@@ -428,11 +401,14 @@ public class Enemy : MonoBehaviour
 
 
     // 変数名を日本語に変換する機能
+    // CustomEditor(typeof(Enemy), true)
+    // 継承したいクラス, trueにすることで、子オブジェクトにも反映される
 #if UNITY_EDITOR
-    [CustomEditor(typeof(Enemy))]
+    [CustomEditor(typeof(Enemy), true)]
     public class EnemyEditor : Editor
     {
         SerializedProperty Speed;
+        SerializedProperty TrapHitSpeed;
         SerializedProperty RageTime;
         SerializedProperty ViewLength;
         SerializedProperty ViewAngle;
@@ -443,6 +419,7 @@ public class Enemy : MonoBehaviour
         public void OnEnable()
         {
             Speed = serializedObject.FindProperty("m_Speed");
+            TrapHitSpeed = serializedObject.FindProperty("m_TrapHitSpeed");
             RageTime = serializedObject.FindProperty("m_RageTime");
             ViewLength = serializedObject.FindProperty("m_ViewLength");
             ViewAngle = serializedObject.FindProperty("m_ViewAngle");
@@ -460,10 +437,11 @@ public class Enemy : MonoBehaviour
             Enemy enemy = target as Enemy;
 
             // float
-            Speed.floatValue = EditorGUILayout.FloatField("移動速度", enemy.m_Speed);
-            RageTime.floatValue = EditorGUILayout.FloatField("暴れる時間", enemy.m_RageTime);
-            ViewLength.floatValue = EditorGUILayout.FloatField("視野距離", enemy.m_ViewLength);
-            ViewAngle.floatValue = EditorGUILayout.FloatField("視野角度", enemy.m_ViewAngle);
+            Speed.floatValue = EditorGUILayout.FloatField("移動速度(m/s)", enemy.m_Speed);
+            TrapHitSpeed.floatValue = EditorGUILayout.FloatField("はさまれた時の速度(m/s)", enemy.m_TrapHitSpeed);
+            RageTime.floatValue = EditorGUILayout.FloatField("暴れる時間(秒)", enemy.m_RageTime);
+            ViewLength.floatValue = EditorGUILayout.FloatField("視野距離(m)", enemy.m_ViewLength);
+            ViewAngle.floatValue = EditorGUILayout.FloatField("視野角度(度数法)", enemy.m_ViewAngle);
 
             EditorGUILayout.Space();
             // Transform

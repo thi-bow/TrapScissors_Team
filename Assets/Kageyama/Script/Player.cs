@@ -178,15 +178,7 @@ public class Player : MonoBehaviour
         if (_state != State.Wait) return; 
         //何かとぶつかっているときにZボタンを押すと大きいハサミで鋏む
         if (Input.GetKeyDown(KeyCode.Z) && _target == null &&
-            col.tag != "Ground" && col.tag != "Gimmick")
-        {
-            _target = col.gameObject;
-            Trigger();
-        }
-
-        //何かとぶつかっているときにXボタンを押すと小さいハサミで鋏む
-        if (Input.GetKeyDown(KeyCode.X) && _target == null &&
-            col.tag != "Ground")
+            col.tag != "Ground" && (col.tag == "Gimmick" || col.tag == "Enemy"))
         {
             _target = col.gameObject;
             Trigger();
