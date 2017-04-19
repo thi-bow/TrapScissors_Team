@@ -4,6 +4,8 @@ using System.Collections;
 public class WallChackPoint : MonoBehaviour
 {
     private bool m_IsWallHit = false;   // 壁に衝突したか
+    private GameObject m_HitWallObj;        // 当たったオブジェクト
+
     //private Vector2 m_Direction = Vector2.right;
 
     // Use this for initialization
@@ -19,6 +21,9 @@ public class WallChackPoint : MonoBehaviour
 
     // 壁に衝突したか
     public bool IsWallHit() { return m_IsWallHit; }
+
+    // 衝突した壁を取得します
+    public GameObject GetHitWallObj() { return m_HitWallObj; }
 
     // 方向を変えます
     public void ChangeDirection()
@@ -60,5 +65,6 @@ public class WallChackPoint : MonoBehaviour
     {
         if (collision.gameObject.tag != "Ground") return;
         m_IsWallHit = true;
+        m_HitWallObj = collision.gameObject;
     }
 }

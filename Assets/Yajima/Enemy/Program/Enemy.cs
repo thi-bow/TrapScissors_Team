@@ -9,21 +9,23 @@ using UnityEditor;
 public class Enemy : MonoBehaviour
 {
     [SerializeField]
-    private float m_Speed = 1.0f;                   // 移動速度
+    protected float m_Speed = 1.0f;                 // 移動速度
     [SerializeField]
-    private float m_TrapHitSpeed = 3.0f;            // 移動速度
+    protected float m_TrapHitSpeed = 3.0f;          // 移動速度
     [SerializeField]
-    private float m_RageTime = 10.0f;               // 暴れる時間
+    protected float m_RageTime = 10.0f;             // 暴れる時間
     [SerializeField]
-    private float m_ViewLength = 10.0f;             // プレイヤーが見える距離
+    protected float m_ReRageTime = 5.0f;            // 再度暴れる時間
     [SerializeField]
-    private float m_ViewAngle = 30.0f;              // プレイヤーが見える角度
+    protected float m_ViewLength = 10.0f;           // プレイヤーが見える距離
     [SerializeField]
-    private Transform m_GroundPoint = null;         // 接地ポイント
+    protected float m_ViewAngle = 30.0f;            // プレイヤーが見える角度
     [SerializeField]
-    private Transform m_RayPoint = null;            // レイポイント
+    protected Transform m_GroundPoint = null;       // 接地ポイント
     [SerializeField]
-    private WallChackPoint m_WChackPoint = null;    // 壁捜索ポイント
+    protected Transform m_RayPoint = null;          // レイポイント
+    [SerializeField]
+    protected WallChackPoint m_WChackPoint = null;  // 壁捜索ポイント
 
     protected int m_Size = 1;                       // 動物の大きさ(内部数値)
     protected Vector2 m_Velocity = Vector2.right;   // 移動量
@@ -34,6 +36,7 @@ public class Enemy : MonoBehaviour
 
     private bool m_IsPravGround;                    // 前回の接地判定
     private string m_PlayerTag = "Player";          // プレイヤータグ
+    private float m_MoveStartTime = 0.5f;           // 移動開始時間
     private State m_State = State.Idel;             // 状態
     private float m_StateTimer = 0.0f;              // 状態の時間
     private DSNumber m_DSNumber = 
@@ -50,6 +53,7 @@ public class Enemy : MonoBehaviour
         Chase,      // 追跡状態
         Discover,   // 発見状態
         TrapHit,    // トラバサミに挟まれている状態
+        TrapTouch,  // トラバサミに挟まれ終わった状態
         Runaway,    // 逃亡状態
     }
 
@@ -76,20 +80,19 @@ public class Enemy : MonoBehaviour
         // アニメーションリストにリソースを追加
         m_Rigidbody = GetComponent<Rigidbody2D>();
         CircleCollider2D collider = GetComponent<CircleCollider2D>();
-
+        // 壁捜索ポイントの位置修正
         if (m_WChackPoint != null)
         {
             m_WChackPoint.transform.position =
-                this.transform.position + this.transform.right * collider.radius;
+                this.transform.position + 
+                (this.transform.right * collider.radius * this.transform.localScale.x);
         }
 
         m_DiscoveredStates.Add(State.Chase);
         m_DiscoveredStates.Add(State.Runaway);
 
-        // スプライトの取得
-        var sprite = gameObject.GetComponent<SpriteRenderer>();
-        if (sprite == null) return;
-        sprite.color = Color.red;
+        // スプライトカラーの変更
+        ChangeSpriteColor(Color.red);
     }
 
     // Update is called once per frame
@@ -102,6 +105,9 @@ public class Enemy : MonoBehaviour
     // 状態の更新
     private void UpdateState(float deltaTime)
     {
+        m_MoveStartTime = Mathf.Max(m_MoveStartTime - deltaTime, 0.0f);
+        if (m_MoveStartTime > 0.0f) return;
+
         // 状態の変更
         switch (m_State)
         {
@@ -109,21 +115,24 @@ public class Enemy : MonoBehaviour
             case State.Discover: Discover(deltaTime); break;
             case State.Chase: Chase(deltaTime); break;
             case State.TrapHit: TrapHit(deltaTime); break;
+            case State.TrapTouch: TrapTouch(deltaTime); break;
             case State.Runaway: Runaway(deltaTime); break;
         };
 
-        if (IsGround()) print("接地");
+        //if (IsGround()) print("接地");
 
         // 状態の時間加算
         m_StateTimer += deltaTime;
 
         // 位置ベクトルを代入
-        Vector2 newVelocity = m_Rigidbody.velocity;
-        Vector2 gravity = Vector2.up * m_Rigidbody.velocity.y;
-        newVelocity = m_Velocity * m_Speed + gravity;
-        m_Rigidbody.velocity = newVelocity;
+        MoveVelocity();
+        //Vector2 newVelocity = m_Rigidbody.velocity;
+        //Vector2 gravity = Vector2.up * m_Rigidbody.velocity.y;
+        //newVelocity = m_Velocity * m_Speed + gravity;
+        //m_Rigidbody.velocity = newVelocity;
 
-        m_Velocity = Vector2.zero;
+        //m_Velocity = Vector2.zero;
+
         m_IsPravGround = IsGround();
     }
 
@@ -189,11 +198,27 @@ public class Enemy : MonoBehaviour
         {
             ChangeState(State.Idel, AnimationNumber.ANIME_IDEL_NUMBER);
             m_Player = null;
-            // スプライトの取得
-            var sprite = gameObject.GetComponent<SpriteRenderer>();
-            if (sprite == null) return;
-            sprite.color = Color.red;
+            ChangeSpriteColor(Color.red);
+            return;
         }
+        else if(m_Player._state == Player.State.Touch)
+        {
+            ChangeState(State.TrapTouch, AnimationNumber.ANIME_TRAP_NUMBER);
+            ChangeSpriteColor(Color.cyan);
+            return;
+        }
+    }
+
+    protected void TrapTouch(float deltaTime)
+    {
+        Move(deltaTime, m_Speed / 20.0f);
+        // 再度暴れ状態になる場合、暴れ状態に遷移する
+        if (m_ReRageTime > m_StateTimer) return;
+        // プレイヤーの状態を変更
+        // 仮
+        m_Player._state = Player.State.Endure;
+        ChangeState(State.TrapHit, AnimationNumber.ANIME_TRAP_NUMBER);
+        ChangeSpriteColor(Color.yellow);
     }
 
     // 逃げ状態
@@ -210,6 +235,18 @@ public class Enemy : MonoBehaviour
         TurnWall();
         // 移動
         m_Velocity = m_Speed * subSpeed * this.transform.right * deltaTime;
+    }
+
+    // 移動ベクトルを代入します
+    protected virtual void MoveVelocity()
+    {
+        // 位置ベクトルを代入
+        Vector2 newVelocity = m_Rigidbody.velocity;
+        Vector2 gravity = Vector2.up * m_Rigidbody.velocity.y;
+        newVelocity = m_Velocity * m_Speed + gravity;
+        m_Rigidbody.velocity = newVelocity;
+
+        m_Velocity = Vector2.zero;
     }
 
     // プレイヤーが見えているか
@@ -250,7 +287,7 @@ public class Enemy : MonoBehaviour
     }
 
     // 壁に衝突したときに、折り返します
-    protected void TurnWall()
+    protected virtual void TurnWall()
     {
         // 壁に当たった、崖があった場合は折り返す
         if (m_WChackPoint != null)
@@ -280,6 +317,16 @@ public class Enemy : MonoBehaviour
         return hit != null;
     }
 
+    // 敵のスプライトカラーの変更
+    protected void ChangeSpriteColor(Color color)
+    {
+        var child = gameObject.transform.FindChild("EnemySprite");
+        if (child == null) return;
+        var sprite = child.GetComponent<SpriteRenderer>();
+        if (sprite == null) return;
+        sprite.color = color;
+    }
+
     //// プレイヤーとの向きを返します(単位ベクトル)
     //protected Vector2 PlayerDirection()
     //{
@@ -302,7 +349,7 @@ public class Enemy : MonoBehaviour
             //// 当たったプレイヤーを子供に追加
             //collision.gameObject.transform.parent = gameObject.transform;
             var player = collision.GetComponent<Player>();
-
+            if (player == null) return;
             // プレイヤーがはさんだ状態なら、トラップヒット状態に遷移
             if (player._state == Player.State.Endure)
             {
@@ -311,11 +358,10 @@ public class Enemy : MonoBehaviour
                 State.TrapHit,
                 AnimationNumber.ANIME_TRAP_NUMBER
                 );
+                // 暴れる時間を入れる
+                player.SetFall(m_RageTime);
                 m_Player = player;
-                // スプライトの取得
-                var sprite = gameObject.GetComponent<SpriteRenderer>();
-                if (sprite == null) return;
-                sprite.color = Color.yellow;
+                ChangeSpriteColor(Color.yellow);
             }
         }
     }
@@ -331,7 +377,6 @@ public class Enemy : MonoBehaviour
             ChangeState(State.Idel, AnimationNumber.ANIME_IDEL_NUMBER);
             return;
         }
-        //var direction = new Vector2(1.0f, 1.0f);
         var direction = Vector2.right;
         var dir = player.transform.position - this.transform.position;
         var length = 2.0f;
@@ -339,7 +384,6 @@ public class Enemy : MonoBehaviour
         if (Mathf.Abs(dir.x) < length) direction.x = 0.0f;
         // 方向転換
         if (dir.x < 0.0f) direction.x = -1.0f;
-        //if (dir.y < 0.0f) direction.y = -1.0f;
 
         m_Velocity = m_Speed * direction * Time.deltaTime;
     }
@@ -405,28 +449,52 @@ public class Enemy : MonoBehaviour
     // 継承したいクラス, trueにすることで、子オブジェクトにも反映される
 #if UNITY_EDITOR
     [CustomEditor(typeof(Enemy), true)]
+    [CanEditMultipleObjects]
     public class EnemyEditor : Editor
     {
         SerializedProperty Speed;
         SerializedProperty TrapHitSpeed;
         SerializedProperty RageTime;
+        SerializedProperty ReRageTime;
         SerializedProperty ViewLength;
         SerializedProperty ViewAngle;
         SerializedProperty GroundPoint;
         SerializedProperty RayPoint;
         SerializedProperty WChackPoint;
 
+        protected List<SerializedProperty> m_Serializes = new List<SerializedProperty>();
+        protected List<string> m_SerializeNames = new List<string>();
+
         public void OnEnable()
         {
+            //for(var i = 0; i != m_SerializeNames.Count; i++)
+            //{
+            //    SetSerialize(m_Serializes[i], m_SerializeNames[i]);
+            //}
+
             Speed = serializedObject.FindProperty("m_Speed");
             TrapHitSpeed = serializedObject.FindProperty("m_TrapHitSpeed");
             RageTime = serializedObject.FindProperty("m_RageTime");
+            ReRageTime = serializedObject.FindProperty("m_ReRageTime");
             ViewLength = serializedObject.FindProperty("m_ViewLength");
             ViewAngle = serializedObject.FindProperty("m_ViewAngle");
             GroundPoint = serializedObject.FindProperty("m_GroundPoint");
             RayPoint = serializedObject.FindProperty("m_RayPoint");
             WChackPoint = serializedObject.FindProperty("m_WChackPoint");
+            OnChildEnable();
         }
+
+        private void AddSerialize()
+        {
+            m_Serializes.Add(Speed);
+        }
+
+        public void SetSerialize(SerializedProperty serialize, string name)
+        {
+            serialize = serializedObject.FindProperty(name);
+        }
+
+        protected virtual void OnChildEnable() { }
 
         public override void OnInspectorGUI()
         {
@@ -440,6 +508,7 @@ public class Enemy : MonoBehaviour
             Speed.floatValue = EditorGUILayout.FloatField("移動速度(m/s)", enemy.m_Speed);
             TrapHitSpeed.floatValue = EditorGUILayout.FloatField("はさまれた時の速度(m/s)", enemy.m_TrapHitSpeed);
             RageTime.floatValue = EditorGUILayout.FloatField("暴れる時間(秒)", enemy.m_RageTime);
+            ReRageTime.floatValue = EditorGUILayout.FloatField("再度暴れる時間(秒)", enemy.m_ReRageTime);
             ViewLength.floatValue = EditorGUILayout.FloatField("視野距離(m)", enemy.m_ViewLength);
             ViewAngle.floatValue = EditorGUILayout.FloatField("視野角度(度数法)", enemy.m_ViewAngle);
 
@@ -452,9 +521,15 @@ public class Enemy : MonoBehaviour
             // WallChackPoint
             WChackPoint.objectReferenceValue = EditorGUILayout.ObjectField("壁捜索ポイント", enemy.m_WChackPoint, typeof(WallChackPoint), true);
 
+            EditorGUILayout.Space();
+
+            OnChildInspectorGUI();
+
             // Unity画面での変更を更新する(これがないとUnity画面で変更できなくなる)
             serializedObject.ApplyModifiedProperties();
         }
+
+        protected virtual void OnChildInspectorGUI() { }
     }
 #endif
 }
