@@ -1,73 +1,34 @@
 ﻿using UnityEngine;
 using System.Collections;
-#if UNITY_EDITOR
-using UnityEditor;
-using UnityEditor.SceneManagement;
-using System.Diagnostics;
-#endif
+using System.IO;
+using System;
+using System.Text;
+using System.Collections.Generic;
 
 public class SceneCreate : MonoBehaviour
 {
-    [SerializeField]
-    private GameObject[] _stageObje;
+    [SerializeField, TooltipAttribute("ステージ名")]
+    private string _stageName;
+    private TextAsset _csvFile; // CSVファイル
+    private List<int> _csvData = new List<int>();   // CSVの中身を入れるリスト
+    private int height = 0;
+    private bool _endCreate;
 
-    public void ObjeIns(int num)
+    void Start()
     {
-        Instantiate(_stageObje[num], new Vector3(0, 0, 0), new Quaternion(0, 0, 0, 1));
+        _endCreate = false;
     }
 
-    //#if UNITY_EDITOR
-    //    [CustomEditor(typeof(SceneCreate))]
-    //    public class SceneCreateEditor : Editor
-    //    {
-
-    //        void Start()
-    //        {
-    //            UnityEditor.SceneView.onSceneGUIDelegate += OnSceneView;
-    //        }
-
-    //        void OnDestroy()
-    //        {
-    //            UnityEditor.SceneView.onSceneGUIDelegate -= OnSceneView;
-    //        }
-
-    //        public void OnSceneView(SceneView sceneView)
-    //        {
-    //            serializedObject.Update();
-    //            SceneCreate scene = target as SceneCreate;
-    //            Handles.BeginGUI();
-    //            if (GUILayout.Button("ボタンです", GUILayout.Width(126)))
-    //            {
-    //                scene.ObjeIns(0);
-    //            }
-    //            Handles.EndGUI();
-
-    //            serializedObject.ApplyModifiedProperties();
-    //        }
-    //    }
-    //#endif
-    }
-
-
-#if UNITY_EDITOR
-[InitializeOnLoad]
-public class NewBehaviourScript
-{
-    SceneCreate scene = new SceneCreate();
-    // ボタンの大きさ
-    const float ButtonWidth = 120f;
-
-    static NewBehaviourScript()
+    void Update()
     {
-        SceneView.onSceneGUIDelegate += (sceneView) =>
+        if(Input.GetKeyDown(KeyCode.A))
         {
-            Handles.BeginGUI();
-            if (GUILayout.Button("ボタンです", GUILayout.Width(ButtonWidth)))
-            {
-                //scene.ObjeIns(0);
-            }
-            Handles.EndGUI();
-        };
+            _endCreate = true;
+        }
+        while(_endCreate == false)
+        {
+            print("aa");
+        }
     }
 }
-#endif
+

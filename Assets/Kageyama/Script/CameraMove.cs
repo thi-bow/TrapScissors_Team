@@ -9,7 +9,7 @@ public class CameraMove : MonoBehaviour
 
     void Start()
     {
-        _lerpfrag = true;
+        //_lerpfrag = true;
         player = GameObject.FindGameObjectWithTag("Player");
         offset = transform.position - player.transform.position;
     }

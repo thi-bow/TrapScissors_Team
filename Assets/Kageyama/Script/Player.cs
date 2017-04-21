@@ -26,7 +26,7 @@ public class Player : MonoBehaviour
     //鋏むんでいるオブジェクトを入れる
     public GameObject _target;
     //鋏む対象との距離
-    private Vector3 offset = Vector3.zero;
+    private Vector3 _offset = Vector3.zero;
     //鋏んだときの反動中かどうか
     public bool _recoil;
     //離すまでの時間を計測する値
@@ -56,6 +56,8 @@ public class Player : MonoBehaviour
     private float _gadd;
     //地面に衝突しているかどうか
     private bool _groundOn;
+    [SerializeField]
+    private float _clampX, _clampZ;
     #endregion
 
     // Use this for initialization
@@ -72,39 +74,42 @@ public class Player : MonoBehaviour
 	
 	// Update is called once per frame
 	void Update ()
-    {
-        if (this.name == "Player(1)")
-        {
-            var cameraRight = Vector3.Scale(_mainCamera.transform.right, new Vector3(1, 1, 1)).normalized;
-            _moveDirection = _mainCamera.transform.up * Input.GetAxis("Vertical") + cameraRight * Input.GetAxis("Horizontal");
-            this.transform.position += _moveDirection * _speed;
-        }
-        else
-        {
-            Move(3.0f);
-            Action();
-        }
-	}
+    {       
+        Move(3.0f);
+        Action();
+
+        //ビルボード
+        Vector3 p = _mainCamera.transform.localPosition;
+        transform.LookAt(p);
+    }
 
     void Move(float gravity)
     {
-        Vector2 newPosition = transform.position;
+        Vector3 newPosition = transform.position;
+        
         //何かを挟んでいたら、位置を固定する
         if (_state != State.Wait)
         {
             _gadd = 0;
-            newPosition.x = _target.transform.position.x + offset.x;
-            newPosition.y = _target.transform.position.y + offset.y;
+            newPosition = _target.transform.position + _offset;
         }
-        //何も挟んでいないなら、重力で落ちる
+        //何も挟んでいないなら、通常移動をする
         if (_state == State.Wait)
         {
-            if(_groundOn == false)_gadd += 0.05f;
-            newPosition.y -= gravity * Time.deltaTime * _gadd;
-        }
-        //ピッタリと追いかける
-        transform.position = newPosition;
 
+            var cameraRight = Vector3.Scale(_mainCamera.transform.right, new Vector3(1, 1, 1)).normalized;
+            _moveDirection = (Vector3.forward - Vector3.right) * Input.GetAxis("Vertical") + cameraRight * Input.GetAxis("Horizontal");
+            newPosition += _moveDirection * _speed;
+
+            //重力
+            //if (_groundOn == false)_gadd += 0.05f;
+            //newPosition.y -= gravity * Time.deltaTime * _gadd;
+        }
+        
+        //移動する
+        transform.position = new Vector3(Mathf.Clamp(newPosition.x, _clampX, 4.5f),
+                                         /*Mathf.Clamp(newPosition.y, -0.5f, 100)*/ newPosition.y,
+                                         Mathf.Clamp(newPosition.z, -4.5f, _clampZ));
     }
 
     //ボタンを使った操作
@@ -172,7 +177,7 @@ public class Player : MonoBehaviour
     }
 
     //当たっている最中も取得する当たり判定
-    void OnTriggerStay2D(Collider2D col)
+    void OnTriggerStay(Collider col)
     {
         //待機状態じゃないと、衝突しても無視する
         if (_state != State.Wait) return; 
@@ -192,7 +197,7 @@ public class Player : MonoBehaviour
     }
     
     //当たり判定が外れたとき
-    void OnTriggerExit2D(Collider2D col)
+    void OnTriggerExit(Collider col)
     {
         //挟まらずに離れたらターゲットを外す
         if (_state == State.Wait)
@@ -209,7 +214,7 @@ public class Player : MonoBehaviour
     public void Trigger()
     {
         _recoil = true;
-        offset = transform.position - _target.transform.position;
+        _offset = transform.position - _target.transform.position;
         _state = State.Endure;
         StartCoroutine(Recoil());
     }

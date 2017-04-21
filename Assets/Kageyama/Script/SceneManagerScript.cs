@@ -211,6 +211,14 @@ public class SceneManagerScript : MonoBehaviour
     }
 
     /// <summary>
+    /// シーン名を取得
+    /// </summary>
+    /// <returns></returns>
+    public string SceneName()
+    {
+        return SceneManager.GetActiveScene().name;
+    }
+    /// <summary>
     /// ゲームを終了する
     /// </summary>
     public void Quit()
