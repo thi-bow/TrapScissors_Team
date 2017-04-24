@@ -9,7 +9,7 @@ public class CameraMove : MonoBehaviour
 
     void Start()
     {
-        _lerpfrag = true;
+        //_lerpfrag = true;
         player = GameObject.FindGameObjectWithTag("Player");
         offset = transform.position - player.transform.position;
     }
@@ -24,16 +24,6 @@ public class CameraMove : MonoBehaviour
         if (_lerpfrag == false) transform.position = newPosition;
         //スムーズに追いかける
         else transform.position = Vector3.Lerp(transform.position, newPosition, 5.0f * Time.deltaTime);
-    }
-
-    // Update is called once per frame
-    void Update () {
-        //Move();
-	}
-
-    void Move()
-    {
-        //this.transform.Rotate(0, (Input.GetAxis("Camera") * 1), 0);
     }
 
     /// <summary>
