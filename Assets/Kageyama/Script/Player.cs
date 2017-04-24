@@ -146,25 +146,48 @@ public class Player : MonoBehaviour
         }
 
         //相手が暴れているときは耐える
-        else if(_state == State.Endure)
+        else if (_state == State.Endure)
         {
-            if(Input.GetKeyDown(KeyCode.Z))
+            if (Input.GetKeyDown(KeyCode.Z))
             {
                 _endureGage += _gageUp * _bladeSpill;
+                GameObject obj = GameObject.Find("Image");
+                if (obj == null)
+                {
+                    return;
+                }
+                garge g = obj.GetComponent<garge>();
+                if (g == null)
+                {
+                    return;
+                }
+                g.SetGauge(_endureGage);
             }
-            if(_endureGage >= 100)
+            if (_endureGage >= 100)
             {
                 _state = State.Touch;
                 _endureGage = 0;
                 _fallTime = 0;
+                GameObject obj = GameObject.Find("Image");
+                if (obj == null)
+                {
+                    return;
+                }
+                garge g = obj.GetComponent<garge>();
+                if (g == null)
+                {
+                    return;
+                }
+                g.SetGauge(0);
             }
             _fallTime += Time.deltaTime;
-            if(_fallTime >= _fall)
+            if (_fallTime >= _fall)
             {
                 _target = null;
                 _state = State.Wait;
                 _endureGage = 0;
                 _fallTime = 0;
+
             }
         }
 
