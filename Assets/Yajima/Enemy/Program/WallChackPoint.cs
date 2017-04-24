@@ -3,21 +3,10 @@ using System.Collections;
 
 public class WallChackPoint : MonoBehaviour
 {
+    #region 変数
     private bool m_IsWallHit = false;   // 壁に衝突したか
     private GameObject m_HitWallObj;        // 当たったオブジェクト
-
-    //private Vector2 m_Direction = Vector2.right;
-
-    // Use this for initialization
-    //void Start() {
-    //    var parent = gameObject.GetComponentInParent<Transform>();
-    //    // 親の方向を取得
-    //    if (parent != null)
-    //        m_Direction = parent.right;
-    //}
-
-    // Update is called once per frame
-    void Update() { }
+    #endregion
 
     // 壁に衝突したか
     public bool IsWallHit() { return m_IsWallHit; }
