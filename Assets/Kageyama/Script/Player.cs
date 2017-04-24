@@ -2,7 +2,7 @@
 制　作　者：影山清晃
 最終編集者：影山清晃
 
-最終更新日：2017/04/15
+最終更新日：2017/04/21
 
 ********************************************/
 using UnityEngine;
@@ -13,9 +13,10 @@ public class Player : MonoBehaviour
     //プレイヤーの状態
     public enum State
     {
-        Wait,
-        Touch,
-        Endure,
+        Wait,   //待機状態
+        Touch,  //挟んでいる状態
+        Endure, //暴れているのを耐えている状態
+        Trap    //罠状態
     }
     public State _state;
 
@@ -54,9 +55,11 @@ public class Player : MonoBehaviour
     public float _speed;
     //落ちていく速度を加速させる
     private float _gadd;
+    [SerializeField , TooltipAttribute("重力の大きさ")]
+    private float _gravity;
     //地面に衝突しているかどうか
     private bool _groundOn;
-    [SerializeField]
+    [SerializeField, TooltipAttribute("ステージの大きさ")]
     private float _clampX, _clampZ;
     #endregion
 
@@ -75,7 +78,7 @@ public class Player : MonoBehaviour
 	// Update is called once per frame
 	void Update ()
     {       
-        Move(3.0f);
+        Move(_gravity);
         Action();
 
         //ビルボード
@@ -96,14 +99,13 @@ public class Player : MonoBehaviour
         //何も挟んでいないなら、通常移動をする
         if (_state == State.Wait)
         {
-
             var cameraRight = Vector3.Scale(_mainCamera.transform.right, new Vector3(1, 1, 1)).normalized;
             _moveDirection = (Vector3.forward - Vector3.right) * Input.GetAxis("Vertical") + cameraRight * Input.GetAxis("Horizontal");
             newPosition += _moveDirection * _speed;
 
             //重力
-            //if (_groundOn == false)_gadd += 0.05f;
-            //newPosition.y -= gravity * Time.deltaTime * _gadd;
+            if (_groundOn == false)_gadd += 0.05f;
+            newPosition.y -= gravity * Time.deltaTime * _gadd;
         }
         
         //移動する
@@ -129,7 +131,7 @@ public class Player : MonoBehaviour
         }
 
         //何かを挟んでいるときは離す
-        else if (_state == State.Touch)
+        else if (_state == State.Touch || _state == State.Trap)
         {
             //ボタンを離したら、リセットする
             if(Input.GetKeyUp(KeyCode.Z))
@@ -156,12 +158,34 @@ public class Player : MonoBehaviour
             if(Input.GetKeyDown(KeyCode.Z))
             {
                 _endureGage += _gageUp * _bladeSpill;
+                GameObject obj = GameObject.Find("Image");
+                if(obj == null)
+                {
+                    return;
+                }
+                garge g = obj.GetComponent<garge>();
+                if (g == null)
+                {
+                    return;
+                }
+                g.SetGauge(_endureGage);
             }
             if(_endureGage >= 100)
             {
                 _state = State.Touch;
                 _endureGage = 0;
                 _fallTime = 0;
+                GameObject obj = GameObject.Find("Image");
+                if(obj == null)
+                {
+                    return;
+                }
+                garge g = obj.GetComponent<garge>();
+                if (g == null)
+                {
+                    return;
+                }
+                g.SetGauge(0);
             }
             _fallTime += Time.deltaTime;
             if(_fallTime >= _fall)
@@ -179,14 +203,42 @@ public class Player : MonoBehaviour
     //当たっている最中も取得する当たり判定
     void OnTriggerStay(Collider col)
     {
+        //LargeEnemy、SmallEnemy
         //待機状態じゃないと、衝突しても無視する
         if (_state != State.Wait) return; 
         //何かとぶつかっているときにZボタンを押すと大きいハサミで鋏む
         if (Input.GetKeyDown(KeyCode.Z) && _target == null &&
-            col.tag != "Ground" && (col.tag == "Gimmick" || col.tag == "Enemy"))
+            col.tag != "Ground")
         {
-            _target = col.gameObject;
-            Trigger();
+            if (col.tag == "LargeEnemy")
+            {
+                _target = col.gameObject;
+                _fall = _target.GetComponent<Enemy>().RageTime();
+                ShakeOff();
+            }
+            else if(col.tag == "SmallEnemy")
+            {
+                _target = col.gameObject;
+                ChangeTrap();
+            }
+        }
+
+        //何かとぶつかっているときにZボタンを押すと大きいハサミで鋏む
+        if (Input.GetKeyDown(KeyCode.X) && _target == null &&
+            col.tag != "Ground")
+        {
+            if (col.tag == "LargeEnemy")
+            {
+                _target = col.gameObject;
+                _fall = _target.GetComponent<Enemy>().RageTime() / 2;
+                ShakeOff();
+            }
+            else if (col.tag == "SmallEnemy")
+            {
+                _target = col.gameObject;
+                _fall = _target.GetComponent<Enemy>().RageTime();
+                ShakeOff();
+            }
         }
 
         if (col.tag == "Ground")
@@ -211,11 +263,19 @@ public class Player : MonoBehaviour
         }
     }
 
-    public void Trigger()
+    public void ShakeOff()
     {
         _recoil = true;
         _offset = transform.position - _target.transform.position;
         _state = State.Endure;
+        StartCoroutine(Recoil());
+    }
+
+    public void ChangeTrap()
+    {
+        _recoil = true;
+        _offset = transform.position - _target.transform.position;
+        _state = State.Trap;
         StartCoroutine(Recoil());
     }
 
@@ -227,12 +287,13 @@ public class Player : MonoBehaviour
     }
 
     /// <summary>
-    /// 落ちるまでの時間を設定
+    /// 落ちるまでの時間を設定して、落ちないように耐える状態にする
     /// </summary>
     /// <param name="time">落ちるまでの時間(秒)</param>
     public void SetFall(float time)
     {
         _fall = time;
+        _state = State.Endure;
     }
 
     /// <summary>
